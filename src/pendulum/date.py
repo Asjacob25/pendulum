@@ -1,6 +1,6 @@
 # The following is only needed because of Python 3.7
 # mypy: no-warn-unused-ignores
-#test
+
 from __future__ import annotations
 
 import calendar
