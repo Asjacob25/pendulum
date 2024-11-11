@@ -72,25 +72,23 @@ class TestGenerator:
                 for line in f:
                     if 'import ' in line or 'from ' in line or 'require(' in line:
                         parts = line.split()
-
-                        # Handle "from module.submodule import ..." statements
-                        if 'from' in parts and 'import' in parts:
-                            module_path = parts[parts.index('from') + 1]
-                            relative = module_path.startswith(".")
-                            # Normalize path for relative and absolute imports
-                            path = module_path.replace(".", "/") if relative else module_path.replace(".", "/")
-                            base_directory = file_directory if relative else Path(".")
-                            for ext in ('.py', '.js', '.ts'):
-                                potential_file = base_directory / f"{path}{ext}"
-                                if potential_file.exists():
-                                    related_files.append(str(potential_file))
-                                    break
                         
-                        # General loop for all parts to check file/module names
+                        # Detects relative imports like `from .file_name import ...`
+                        if 'from' in parts:
+                            index = parts.index('from')
+                            module_path = parts[index + 1]
+                            if module_path.startswith("."):  # Handles relative import
+                                relative_path = module_path.replace(".", "").replace("_", "").replace(".", "/")
+                                for ext in ('.py', '.js', '.ts'):
+                                    potential_file = file_directory / f"{relative_path}{ext}"
+                                    if potential_file.exists():
+                                        related_files.append(str(potential_file))
+                                        break
+                        
                         for part in parts:
+                            # Check for relative imports with single dot, without `from`
                             if len(part) > 1 and part[0] == "." and part[1] != ".":
-                                # Relative path, single dot
-                                path = part.replace(".", "")
+                                path = part.replace(".", "").replace("_", "").replace(".", "/")
                                 for ext in ('.py', '.js', '.ts'):
                                     potential_file = file_directory / f"{path}{ext}"
                                     if potential_file.exists():
@@ -106,7 +104,7 @@ class TestGenerator:
                             else:
                                 if part.endswith(('.py', '.js', '.ts')) and Path(part).exists():
                                     related_files.append(part)
-                                elif part.isidentifier():
+                                elif part.isidentifier():  # Valid class/module names
                                     base_name = part.lower()
                                     for ext in ('.py', '.js', '.ts'):
                                         potential_file = f"{base_name}{ext}"
@@ -478,7 +476,7 @@ class TestGenerator:
               
               if prompt:
                   
-                  #test_cases = self.call_openai_api(prompt)
+                  test_cases = self.call_openai_api(prompt)
                   
                   if test_cases:
                       test_cases = test_cases.replace("“", '"').replace("”", '"')
